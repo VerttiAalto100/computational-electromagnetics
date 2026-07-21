@@ -18,8 +18,8 @@ Each example highlights a core modelling technique that can be applied to differ
 .
 ├── example_name/
 │   ├── mesh/
-│   │   ├── geometry.py      # Gmsh geometry
-│   │   └── mesh.msh         # Generated mesh
+│   │   ├── geometry.py      # Gmsh geometry for the mesh
+│   │   └── mesh.msh         # Generated mesh (if not too large)
 │   ├── example.ipynb        # FEM implementation
 │   └── verification.mph     # COMSOL verification
 │
