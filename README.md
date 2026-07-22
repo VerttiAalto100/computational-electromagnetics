@@ -18,17 +18,21 @@ Each example highlights a core modelling technique that can be applied to differ
 .
 ├── example_name/
 │   ├── mesh/
-│   │   ├── geometry.py      # Gmsh geometry for the mesh
-│   │   └── mesh.msh         # Generated mesh (if not too large)
-│   ├── example.ipynb        # FEM implementation
-│   └── verification.mph     # COMSOL verification
+│   │   ├── geometry.py         # Gmsh geometry
+│   │   └── mesh.msh            # Generated mesh
+│   ├── verification/
+│   │   ├── model.mph           # COMSOL model (if available)
+│   │   └── data               # Reference data (if available)
+│   └── example.ipynb           # FEM implementation
 │
 ├── another_example/
 │   └── ...
 │
+├── utils/
+│   # Helper functions
+│
 └── README.md
 ```
-
 Each example typically includes:
 
 - Geometry generation using the Gmsh Python API
@@ -44,13 +48,9 @@ Each example typically includes:
 Current topics include:
 
 - Magnetostatic A-formulation
-- Current carrying conductors (A-formulation)
 - Magnetic flux density computation
-- Torque computation using Arkkio's method
-- Iron core magnetic circuits
+- Linear iron core magnetic circuits
 - Permanent magnet modelling
-- Three-phase rotating magnetic fields
-
 ---
 
 ## Branches
