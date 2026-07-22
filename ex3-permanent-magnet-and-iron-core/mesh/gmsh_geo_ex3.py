@@ -8,7 +8,7 @@ gmsh.model.add("c_core_pm_air")
 # --------------------------------------------------
 
 cm = 1.0 / 100.0
-lc = 0.1 * cm
+lc = 0.2 * cm
 
 
 # --------------------------------------------------
@@ -22,7 +22,7 @@ hy = 2 * cm
 wmag = 2 * cm
 
 # Air padding
-air_pad = 3 * w
+air_pad = 1 * w
 
 
 # --------------------------------------------------
@@ -65,11 +65,7 @@ for i in range(10):
     )
 
 l0,l1,l2,l3,l4,l5,l6,l7,l8,l9 = lines
-
-
-# Internal magnet separation
-lm1 = gmsh.model.occ.addLine(pts[2], pts[7])
-lm2 = gmsh.model.occ.addLine(pts[3], pts[6])
+lm = gmsh.model.occ.addLine(pts[2], pts[7])
 
 
 # --------------------------------------------------
@@ -77,30 +73,23 @@ lm2 = gmsh.model.occ.addLine(pts[3], pts[6])
 # --------------------------------------------------
 
 core_loop = gmsh.model.occ.addCurveLoop(
-    [l0,l1,l2,l3,l4,l5,l6,l7,l8,l9]
+    [l0, l1, l2, l3, l4, l5, l6, l7, l8, l9]
 )
 
-core_surface = gmsh.model.occ.addPlaneSurface(
-    [core_loop]
-)
+core_surface = gmsh.model.occ.addPlaneSurface([core_loop])
 
 
-mag_loop_south = gmsh.model.occ.addCurveLoop(
-    [-l2,lm1,-l6,-lm2]
-)
+# Single rectangular magnet
+mag_loop = gmsh.model.occ.addCurveLoop([
+    l2,     # p2 -> p3
+    l3,     # p3 -> p4
+    l4,     # p4 -> p5
+    l5,     # p5 -> p6
+    l6,     # p6 -> p7
+    -lm     # p7 -> p2
+])
 
-mag_loop_north = gmsh.model.occ.addCurveLoop(
-    [l3,l4,l5,-lm2]
-)
-
-magnet_S = gmsh.model.occ.addPlaneSurface(
-    [mag_loop_south]
-)
-
-magnet_N = gmsh.model.occ.addPlaneSurface(
-    [mag_loop_north]
-)
-
+magnet = gmsh.model.occ.addPlaneSurface([mag_loop])
 
 
 # --------------------------------------------------
@@ -126,16 +115,14 @@ gmsh.model.occ.synchronize()
 objects = [
     (2, air_box),
     (2, core_surface),
-    (2, magnet_N),
-    (2, magnet_S)
+    (2, magnet)
 ]
 
 
 gmsh.model.occ.fragment(
     [(2,air_box)],
     [(2,core_surface),
-     (2,magnet_N),
-     (2,magnet_S)]
+     (2,magnet)]
 )
 
 
@@ -155,8 +142,7 @@ result, frag_map = gmsh.model.occ.fragment(
     [(2,air_box)],
     [
         (2,core_surface),
-        (2,magnet_N),
-        (2,magnet_S)
+        (2,magnet)
     ]
 )
 
@@ -165,16 +151,15 @@ gmsh.model.occ.synchronize()# --------------------------------------------------
 # --------------------------------------------------
 
 core_surfaces = []
-magN_surfaces = []
-magS_surfaces = []
+mag_surfaces = []
+
 
 
 # frag_map order follows the input list:
 #
 # 0 -> air_box
 # 1 -> core_surface
-# 2 -> magnet_N
-# 3 -> magnet_S
+# 2 -> magnet
 
 
 # Core
@@ -184,14 +169,8 @@ core_surfaces = [
 
 
 # North magnet
-magN_surfaces = [
+mag_surfaces = [
     e[1] for e in frag_map[2]
-]
-
-
-# South magnet
-magS_surfaces = [
-    e[1] for e in frag_map[3]
 ]
 
 
@@ -206,8 +185,7 @@ all_surfaces = [
 
 solid_surfaces = (
     core_surfaces +
-    magN_surfaces +
-    magS_surfaces
+    mag_surfaces
 )
 
 
@@ -228,16 +206,9 @@ gmsh.model.addPhysicalGroup(
 
 gmsh.model.addPhysicalGroup(
     2,
-    magN_surfaces,
-    name="magnet_N"
+    mag_surfaces,
+    name="magnet"
 )
-
-gmsh.model.addPhysicalGroup(
-    2,
-    magS_surfaces,
-    name="magnet_S"
-)
-
 
 gmsh.model.addPhysicalGroup(
     2,
@@ -299,11 +270,21 @@ gmsh.model.addPhysicalGroup(
 print("Outer boundary edges:", outer_boundary)# --------------------------------------------------
 # Mesh
 # --------------------------------------------------
+# Disable automatic mesh size adaptation
+gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
+gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
+gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
 
+# Force a uniform element size
+gmsh.option.setNumber("Mesh.MeshSizeMin", lc)
+gmsh.option.setNumber("Mesh.MeshSizeMax", lc)
 gmsh.model.mesh.generate(2)
 
-gmsh.write("c_core_pm.msh")
+from pathlib import Path
 
+# wirte the .msh to same folder
+mesh_file = Path(__file__).with_name("mesh_ex3.msh")
+gmsh.write(str(mesh_file))
 
 gmsh.fltk.run()
 
