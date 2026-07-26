@@ -43,16 +43,6 @@ Each example typically includes:
 
 ---
 
-## Examples
-
-Current topics include:
-
-- Magnetostatic A-formulation
-- Magnetic flux density computation
-- Linear iron core magnetic circuits
-- Permanent magnet modelling
----
-
 ## Branches
 
 - **master** – Stable & verified examples
