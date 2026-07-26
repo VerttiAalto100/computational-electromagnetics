@@ -5,7 +5,7 @@ Finite element method (FEM) examples for computational electromagnetics implemen
 - **scikit-fem** – https://github.com/kinnala/scikit-fem
 - **Gmsh** – https://gmsh.info/
 
-Each example highlights a core modelling technique that can be applied to different types of electromagnetic problems. These FEM implementations are intended primarily as learning resources. They emphasize clarity and understanding of the FEM workflow, rather than optimization and computational efficiency.
+These problems emphasize clarity and understanding of the FEM workflow, rather than optimization and computational efficiency.
 
 **Author:** Vertti Aalto  
 **Email:** vertti.aalto@gmail.com
