@@ -29,33 +29,59 @@ def elem_to_nodal(mesh, elem_values):
     return nodal_sum / nodal_count
 
 
-def eval_B_at_points(A_z, basis, points, smooth=True):
+def eval_B_at_points(A_z, basis, points, average_qp=True):
     """
-    Evaluate B = curl(A_z ẑ) = (dAz/dy, -dAz/dx) at arbitrary (x,y) points.
+    Evaluate B = curl(Az zhat) at arbitrary points.
+
+    Parameters
+    ----------
+    A_z : ndarray
+        FE solution.
+    basis : Basis
+        Basis used to solve A_z.
+    points : (N,2) ndarray
+        Query points.
+    average_qp : bool
+        Average quadrature values inside each element.
+        Recommended for visualization.
+
+    Returns
+    -------
+    Bx, By, Bnorm
+        Arrays of length N.
     """
 
     uh = basis.interpolate(A_z)
-    Bx_elem = uh.grad[1]     # (n_elems,)
-    By_elem = -uh.grad[0]    # (n_elems,)
 
-    if smooth:
-        mesh = basis.mesh
-  
-        basis_p1 = Basis(mesh, ElementTriP1())
-        uh = basis.interpolate(A_z)
-        Bx = project(uh.grad[1], basis_p1)
-        By = project(-uh.grad[0], basis_p1)
-        P = basis_p1.probes(points.T)
-        Bx_pts = P @ Bx
-        By_pts = P @ By
+    gradx = uh.grad[0]
+    grady = uh.grad[1]
+
+    # P2 -> (nelems,nqp)
+    # P1 -> (nelems,)
+    if gradx.ndim == 2:
+        if average_qp:
+            dAdx = gradx.mean(axis=1)
+            dAdy = grady.mean(axis=1)
+        else:
+            dAdx = gradx[:, 0]
+            dAdy = grady[:, 0]
     else:
-        finder = basis.mesh.element_finder()
-        tris = finder(points[:, 0], points[:, 1])
-        Bx_pts = Bx_elem[tris]
-        By_pts = By_elem[tris]
+        dAdx = gradx
+        dAdy = grady
 
-    Bnorm_pts = np.sqrt(Bx_pts**2 + By_pts**2)
-    return Bx_pts, By_pts, Bnorm_pts
+    Bx_elem = dAdy
+    By_elem = -dAdx
+
+    finder = basis.mesh.element_finder()
+    elem = finder(points[:, 0], points[:, 1])
+
+    if np.any(elem < 0):
+        raise ValueError("Some points lie outside the mesh.")
+
+    Bx = Bx_elem[elem]
+    By = By_elem[elem]
+
+    return Bx, By, np.sqrt(Bx**2 + By**2)
 
 def eval_Br_Bt_at_points(A_z, basis, points):
     
