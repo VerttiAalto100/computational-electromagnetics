@@ -3,14 +3,16 @@
 Gmsh Python API (OpenCASCADE kernel).
 
 Regions produced (as Gmsh Physical Groups on 2D surfaces):
-    Shaft
-    Magnet_N1, Magnet_S1, Magnet_N2, Magnet_S2   (4 magnets, 2 pole pairs)
-    AirGap
-    Stator                                       (core ring, 6 bolt holes cut out)
-    BoltHole_1 ... BoltHole_6
+    RotorYoke
+    Magnet_N, Magnet_S                           (2 magnets, 1 pole pair)
+    AirGap                                       (split radially at r_mid, see below)
+    StatorYoke                                   (core ring, 6 bolt holes cut out)
+    Slot_1 ... Slot_6
     AirBox                                       (surrounding air, outside the stator)
-Physical curve:
+Physical curves:
     OuterBoundary                                (outer edge of the air box, for BCs)
+    MST_Circle                                   (circle at the airgap midpoint, for
+                                                   Maxwell stress tensor torque integration)
 
 Edit the PARAMETERS block below to match your machine.
 """
@@ -19,7 +21,7 @@ import gmsh
 import math
 
 # ----------------------------------------------------------------------
-# PARAMETERS (mm)
+# PARAMETERS (m)
 # ----------------------------------------------------------------------
 mm = 1e-3  # nastran needs to be x1000 to match comsol. This is done to get correct mesh
 
@@ -35,6 +37,11 @@ n_magnets    = 2       # 1 pole pair
 
 box_half     = 100.0*mm  # surrounding square air box, half side length
 
+# circle used for Maxwell stress tensor torque integration - sits in the
+# middle of the airgap by default, but can be moved anywhere strictly
+# between r_rotor and r_stator_in
+r_mst = (r_rotor + r_stator_in) / 2
+
 gmsh.initialize()
 gmsh.model.add("pmsm_2d")
 occ = gmsh.model.occ
@@ -44,6 +51,7 @@ occ = gmsh.model.occ
 # ----------------------------------------------------------------------
 shaft_disk     = occ.addDisk(0, 0, 0, r_shaft,      r_shaft)
 rotor_disk     = occ.addDisk(0, 0, 0, r_rotor,      r_rotor)
+mst_disk       = occ.addDisk(0, 0, 0, r_mst,        r_mst)        # <-- new: MST circle
 statorin_disk  = occ.addDisk(0, 0, 0, r_stator_in,  r_stator_in)
 statorout_disk = occ.addDisk(0, 0, 0, r_stator_out, r_stator_out)
 air_box        = occ.addRectangle(-box_half, -box_half, 0, 2 * box_half, 2 * box_half)
@@ -67,7 +75,7 @@ for k in range(n_magnets):
 # ----------------------------------------------------------------------
 # 2) Fragment everything together -> conformal, non-overlapping regions
 # ----------------------------------------------------------------------
-surfaces = [(2, air_box), (2, statorout_disk), (2, statorin_disk),
+surfaces = [(2, air_box), (2, statorout_disk), (2, statorin_disk), (2, mst_disk),
             (2, rotor_disk), (2, shaft_disk)] + [(2, d) for d in bolt_disks]
 curves = [(1, l) for l in spoke_lines]
 
@@ -85,15 +93,17 @@ occ.synchronize()
 # are NOT symmetric about the origin) are still identified by proximity
 # of their centroid to a known bolt centre.
 # ----------------------------------------------------------------------
-tol = 1e-6
+tol = max(r_stator_out * 1e-4, 1e-6)
 groups = {"RotorYoke": [], "AirGap": [], "StatorYoke": [], "AirBox": [],
           "Magnet_N": [], "Magnet_S": []}
 for i in range(n_bolts):
     groups[f"Slot_{i + 1}"] = []
 
-# midpoint thresholds between successive radii
+# midpoint thresholds between successive radii (r_mst splits AirGap into two
+# surfaces, both of which still get filed under the single "AirGap" group)
 t_shaft_rotor  = (r_shaft + r_rotor) / 2
-t_rotor_sin    = (r_rotor + r_stator_in) / 2
+t_rotor_mst    = (r_rotor + r_mst) / 2
+t_mst_sin      = (r_mst + r_stator_in) / 2
 t_sin_sout     = (r_stator_in + r_stator_out) / 2
 t_sout_box     = (r_stator_out + box_half) / 2
 
@@ -116,13 +126,15 @@ for dim, tag in gmsh.model.getEntities(2):
 
     if extent < t_shaft_rotor:
         groups["RotorYoke"].append(tag)
-    elif extent < t_rotor_sin:
+    elif extent < t_rotor_mst:
         if y >= 0:
             groups["Magnet_N"].append(tag)
         else:
             groups["Magnet_S"].append(tag)
+    elif extent < t_mst_sin:
+        groups["AirGap"].append(tag)          # inner half of the airgap
     elif extent < t_sin_sout:
-        groups["AirGap"].append(tag)
+        groups["AirGap"].append(tag)          # outer half of the airgap
     elif extent < t_sout_box:
         groups["StatorYoke"].append(tag)
     else:
@@ -142,6 +154,17 @@ for dim, tag in edges:
         outer_edges.append(tag)
 gmsh.model.addPhysicalGroup(1, outer_edges, name="OuterBoundary")
 
+# MST circle: the full circle of radius r_mst, identified by bounding-box
+# extent (it's the only curve at that exact radius, and it stays a single
+# unbroken circle since nothing else in the model crosses it)
+mst_curve_tags = []
+for dim, tag in gmsh.model.getEntities(1):
+    xmin, ymin, _, xmax, ymax, _ = gmsh.model.getBoundingBox(dim, tag)
+    extent = max(abs(xmin), abs(xmax), abs(ymin), abs(ymax))
+    if abs(extent - r_mst) < tol:
+        mst_curve_tags.append(tag)
+gmsh.model.addPhysicalGroup(1, mst_curve_tags, name="MST_Circle")
+
 # ----------------------------------------------------------------------
 # 4) Mesh size field: refine near the airgap and the bolt holes
 #
@@ -152,10 +175,10 @@ gmsh.model.addPhysicalGroup(1, outer_edges, name="OuterBoundary")
 # mesh (instead of a single global size) lets the airgap/bolt holes be
 # fine while the rest of the model stays coarse and fast to mesh.
 # ----------------------------------------------------------------------
-lc_fine   = 0.6*mm   # element size in the airgap / around bolt holes (mm)
-lc_coarse = 4.0*mm   # element size far from those features (mm)
-dist_min  = 1.0*mm   # stay at lc_fine within this distance of the curves (mm)
-dist_max  = 9.0*mm   # grow linearly out to lc_coarse by this distance (mm)
+lc_fine   = 0.6*mm   # element size in the airgap / around bolt holes
+lc_coarse = 4.0*mm   # element size far from those features
+dist_min  = 1.0*mm   # stay at lc_fine within this distance of the curves
+dist_max  = 9.0*mm   # grow linearly out to lc_coarse by this distance
 
 # disable the size heuristics so only our field controls element size
 gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
@@ -187,7 +210,7 @@ gmsh.model.mesh.field.setAsBackgroundMesh(thresh_field)
 gmsh.model.mesh.generate(2)
 
 from pathlib import Path
-# wirte the .msh to same folder
+# write the .msh to same folder
 mesh_file = Path(__file__).with_name("mesh_ex6.msh")
 
 gmsh.write(str(mesh_file))
