@@ -21,16 +21,19 @@ import math
 # ----------------------------------------------------------------------
 # PARAMETERS (mm)
 # ----------------------------------------------------------------------
-r_shaft      = 12.0    # shaft radius
-r_rotor      = 32.0    # rotor / magnet outer radius
-r_stator_in  = 34.0    # stator bore radius  -> airgap = r_stator_in - r_rotor
-r_stator_out = 65.0    # stator outer radius
-r_bolt_pcd   = 50.0    # bolt hole pitch circle radius
-r_bolt       = 4.0     # bolt hole radius
+mm = 1  # nastran needs to be x1000 to match comsol. This is done to get correct mesh
+
+
+r_shaft      = 12.0*mm    # shaft radius
+r_rotor      = 32.0*mm   # rotor / magnet outer radius
+r_stator_in  = 34.0*mm    # stator bore radius  -> airgap = r_stator_in - r_rotor
+r_stator_out = 65.0*mm    # stator outer radius
+r_bolt_pcd   = 50.0*mm    # bolt hole pitch circle radius
+r_bolt       = 4.0*mm     # bolt hole radius
 n_bolts      = 6
 n_magnets    = 4       # 2 pole pairs
 
-box_half     = 100.0   # surrounding square air box, half side length
+box_half     = 100.0*mm  # surrounding square air box, half side length
 
 gmsh.initialize()
 gmsh.model.add("pmsm_2d")
@@ -149,10 +152,10 @@ gmsh.model.addPhysicalGroup(1, outer_edges, name="OuterBoundary")
 # mesh (instead of a single global size) lets the airgap/bolt holes be
 # fine while the rest of the model stays coarse and fast to mesh.
 # ----------------------------------------------------------------------
-lc_fine   = 0.6   # element size in the airgap / around bolt holes (mm)
-lc_coarse = 4.0   # element size far from those features (mm)
-dist_min  = 1.0   # stay at lc_fine within this distance of the curves (mm)
-dist_max  = 9.0   # grow linearly out to lc_coarse by this distance (mm)
+lc_fine   = 0.6*mm   # element size in the airgap / around bolt holes (mm)
+lc_coarse = 4.0*mm   # element size far from those features (mm)
+dist_min  = 1.0*mm   # stay at lc_fine within this distance of the curves (mm)
+dist_max  = 9.0*mm   # grow linearly out to lc_coarse by this distance (mm)
 
 # disable the size heuristics so only our field controls element size
 gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
@@ -185,7 +188,7 @@ gmsh.model.mesh.generate(2)
 
 from pathlib import Path
 # wirte the .msh to same folder
-mesh_file = Path(__file__).with_name("mesh_ex6.msh")
+mesh_file = Path(__file__).with_name("mesh_ex6.bdf")
 
 gmsh.write(str(mesh_file))
 
