@@ -21,7 +21,7 @@ import math
 # ----------------------------------------------------------------------
 # PARAMETERS (mm)
 # ----------------------------------------------------------------------
-mm = 1  # nastran needs to be x1000 to match comsol. This is done to get correct mesh
+mm = 1e-3  # nastran needs to be x1000 to match comsol. This is done to get correct mesh
 
 
 r_shaft      = 12.0*mm    # shaft radius
@@ -31,7 +31,7 @@ r_stator_out = 65.0*mm    # stator outer radius
 r_bolt_pcd   = 50.0*mm    # bolt hole pitch circle radius
 r_bolt       = 4.0*mm     # bolt hole radius
 n_bolts      = 6
-n_magnets    = 4       # 2 pole pairs
+n_magnets    = 2       # 1 pole pair
 
 box_half     = 100.0*mm  # surrounding square air box, half side length
 
@@ -56,7 +56,7 @@ for i in range(n_bolts):
     bolt_centers.append((bx, by))
     bolt_disks.append(occ.addDisk(bx, by, 0, r_bolt, r_bolt))
 
-# 4 short radial spokes (0/90/180/270 deg) that split the magnet ring into quadrants
+# 2 short radial spokes (0/180 deg) that split the magnet ring into quadrants
 spoke_lines = []
 for k in range(n_magnets):
     ang = 2 * math.pi * k / n_magnets
@@ -87,7 +87,7 @@ occ.synchronize()
 # ----------------------------------------------------------------------
 tol = 1e-6
 groups = {"RotorYoke": [], "AirGap": [], "StatorYoke": [], "AirBox": [],
-          "Magnet_N1": [], "Magnet_S1": [], "Magnet_N2": [], "Magnet_S2": []}
+          "Magnet_N": [], "Magnet_S": []}
 for i in range(n_bolts):
     groups[f"Slot_{i + 1}"] = []
 
@@ -117,10 +117,10 @@ for dim, tag in gmsh.model.getEntities(2):
     if extent < t_shaft_rotor:
         groups["RotorYoke"].append(tag)
     elif extent < t_rotor_sin:
-        ang = math.atan2(y, x) % (2 * math.pi)
-        quadrant = int(ang // (math.pi / 2)) % 4          # 0..3
-        name = ["Magnet_N1", "Magnet_S1", "Magnet_N2", "Magnet_S2"][quadrant]
-        groups[name].append(tag)
+        if y >= 0:
+            groups["Magnet_N"].append(tag)
+        else:
+            groups["Magnet_S"].append(tag)
     elif extent < t_sin_sout:
         groups["AirGap"].append(tag)
     elif extent < t_sout_box:
@@ -188,7 +188,7 @@ gmsh.model.mesh.generate(2)
 
 from pathlib import Path
 # wirte the .msh to same folder
-mesh_file = Path(__file__).with_name("mesh_ex6.bdf")
+mesh_file = Path(__file__).with_name("mesh_ex6.msh")
 
 gmsh.write(str(mesh_file))
 
