@@ -33,19 +33,21 @@ def eval_B_at_points(A_z, basis, points, smooth=True):
     """
     Evaluate B = curl(A_z ẑ) = (dAz/dy, -dAz/dx) at arbitrary (x,y) points.
     """
+
     uh = basis.interpolate(A_z)
-    Bx_elem = uh.grad[1].mean(axis=1)     # (n_elems,)
-    By_elem = -uh.grad[0].mean(axis=1)    # (n_elems,)
+    Bx_elem = uh.grad[1]     # (n_elems,)
+    By_elem = -uh.grad[0]    # (n_elems,)
 
     if smooth:
         mesh = basis.mesh
-        Bx_nodal = elem_to_nodal(mesh, Bx_elem)
-        By_nodal = elem_to_nodal(mesh, By_elem)
-
+  
         basis_p1 = Basis(mesh, ElementTriP1())
+        uh = basis.interpolate(A_z)
+        Bx = project(uh.grad[1], basis_p1)
+        By = project(-uh.grad[0], basis_p1)
         P = basis_p1.probes(points.T)
-        Bx_pts = P @ Bx_nodal
-        By_pts = P @ By_nodal
+        Bx_pts = P @ Bx
+        By_pts = P @ By
     else:
         finder = basis.mesh.element_finder()
         tris = finder(points[:, 0], points[:, 1])
