@@ -33,7 +33,7 @@ r_stator_out = 65.0*mm    # stator outer radius
 r_bolt_pcd   = 50.0*mm    # bolt hole pitch circle radius
 r_bolt       = 4.0*mm     # bolt hole radius
 n_bolts      = 6
-n_magnets    = 2       # 1 pole pair
+n_magnets    = 1       # 1 pole pair
 
 box_half     = 100.0*mm  # surrounding square air box, half side length
 
@@ -66,11 +66,12 @@ for i in range(n_bolts):
 
 # 2 short radial spokes (0/180 deg) that split the magnet ring into quadrants
 spoke_lines = []
-for k in range(n_magnets):
-    ang = 2 * math.pi * k / n_magnets
-    p1 = occ.addPoint(r_shaft * math.cos(ang), r_shaft * math.sin(ang), 0)
-    p2 = occ.addPoint(r_rotor * math.cos(ang), r_rotor * math.sin(ang), 0)
-    spoke_lines.append(occ.addLine(p1, p2))
+#
+#for k in range(n_magnets):
+#    ang = 2 * math.pi * k / n_magnets
+#    p1 = occ.addPoint(r_shaft * math.cos(ang), r_shaft * math.sin(ang), 0)
+#    p2 = occ.addPoint(r_rotor * math.cos(ang), r_rotor * math.sin(ang), 0)
+#    spoke_lines.append(occ.addLine(p1, p2))
 
 # ----------------------------------------------------------------------
 # 2) Fragment everything together -> conformal, non-overlapping regions
@@ -94,8 +95,7 @@ occ.synchronize()
 # of their centroid to a known bolt centre.
 # ----------------------------------------------------------------------
 tol = max(r_stator_out * 1e-4, 1e-6)
-groups = {"RotorYoke": [], "AirGap": [], "StatorYoke": [], "AirBox": [],
-          "Magnet_N": [], "Magnet_S": []}
+groups = {"RotorYoke": [], "AirGap": [], "StatorYoke": [], "AirBox": [], "Magnet": []}
 for i in range(n_bolts):
     groups[f"Slot_{i + 1}"] = []
 
@@ -127,10 +127,7 @@ for dim, tag in gmsh.model.getEntities(2):
     if extent < t_shaft_rotor:
         groups["RotorYoke"].append(tag)
     elif extent < t_rotor_mst:
-        if y >= 0:
-            groups["Magnet_N"].append(tag)
-        else:
-            groups["Magnet_S"].append(tag)
+        groups["Magnet"].append(tag)
     elif extent < t_mst_sin:
         groups["AirGap"].append(tag)          # inner half of the airgap
     elif extent < t_sin_sout:
@@ -211,7 +208,7 @@ gmsh.model.mesh.generate(2)
 
 from pathlib import Path
 # write the .msh to same folder
-mesh_file = Path(__file__).with_name("mesh_ex6.msh")
+mesh_file = Path(__file__).with_name("mesh_pmsm_2d.msh")
 
 gmsh.write(str(mesh_file))
 
