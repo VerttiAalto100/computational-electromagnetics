@@ -268,22 +268,46 @@ gmsh.model.addPhysicalGroup(
 )
 
 print("Outer boundary edges:", outer_boundary)# --------------------------------------------------
-# Mesh
+
 # --------------------------------------------------
-# Disable automatic mesh size adaptation
+# Mesh size control: fine at core/magnet corners, coarse far away
+# --------------------------------------------------
+
+# Inner "notch" corners of the C-core (highest field gradient, most important)
+core_corner_pts = [pts[2], pts[7]]
+
+# Magnet corners (mostly shared with core corners above, listed for clarity)
+magnet_corner_pts = [pts[4], pts[5]]
+
+corner_pts = list(set(core_corner_pts + magnet_corner_pts))
+
+lc_fine   = 0.05 * cm   # element size right at the corners
+lc_coarse = 0.5  * cm   # element size far away / near the air box boundary
+
+dist_field = gmsh.model.mesh.field.add("Distance")
+gmsh.model.mesh.field.setNumbers(dist_field, "PointsList", corner_pts)
+
+thresh_field = gmsh.model.mesh.field.add("Threshold")
+gmsh.model.mesh.field.setNumber(thresh_field, "InField", dist_field)
+gmsh.model.mesh.field.setNumber(thresh_field, "SizeMin", lc_fine)
+gmsh.model.mesh.field.setNumber(thresh_field, "SizeMax", lc_coarse)
+gmsh.model.mesh.field.setNumber(thresh_field, "DistMin", 0.4 * cm)  # stays fine within this radius
+gmsh.model.mesh.field.setNumber(thresh_field, "DistMax", 3.0 * cm)  # fully coarse beyond this radius
+
+gmsh.model.mesh.field.setAsBackgroundMesh(thresh_field)
+
+# Let the field drive sizing instead of forcing one uniform size
 gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
 gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
 gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
-
-# Force a uniform element size
-gmsh.option.setNumber("Mesh.MeshSizeMin", lc)
-gmsh.option.setNumber("Mesh.MeshSizeMax", lc)
+gmsh.option.setNumber("Mesh.MeshSizeMin", lc_fine)
+gmsh.option.setNumber("Mesh.MeshSizeMax", lc_coarse)   # <- was `lc` before, this was the bug
 gmsh.model.mesh.generate(2)
 
 from pathlib import Path
 
 # wirte the .msh to same folder
-mesh_file = Path(__file__).with_name("mesh_non_linear_iron.msh")
+mesh_file = Path(__file__).with_name("mesh_non_linear_iron.bdf")
 gmsh.write(str(mesh_file))
 
 gmsh.fltk.run()
