@@ -18,12 +18,12 @@ These problems emphasize clarity and understanding of the FEM workflow, rather t
 .
 ├── example_name/
 │   ├── mesh/
-│   │   ├── geometry.py         # Gmsh geometry
-│   │   └── mesh.msh            # Generated mesh
+│   │   ├── geometry.py         # Gmsh geometry file
+│   │   └── mesh.msh or .bdf    # Generated mesh
 │   ├── verification/
 │   │   ├── model.mph           # COMSOL model (if available)
-│   │   └── data               # Reference data (if available)
-│   └── example.ipynb           # FEM implementation
+│   │   └── data                # Reference data (if available)
+│   └── example_notebook.ipynb  # FEM implementation
 │
 ├── another_example/
 │   └── ...
@@ -36,7 +36,7 @@ These problems emphasize clarity and understanding of the FEM workflow, rather t
 Each example typically includes:
 
 - Geometry generation using the Gmsh Python API
-- Generated mesh (`.msh`)
+- Generated mesh (`.msh`) and/or (`.bdf`)
 - FEM implementation in a Jupyter notebook
 - Solution visualization
 - Verification against analytical solutions and/or COMSOL (when available)
