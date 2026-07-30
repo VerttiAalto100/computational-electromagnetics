@@ -208,7 +208,7 @@ gmsh.model.mesh.generate(2)
 
 from pathlib import Path
 # write the .msh to same folder
-mesh_file = Path(__file__).with_name("mesh_pmsm_2d.msh")
+mesh_file = Path(__file__).with_name("mesh_pmsm_2d.bdf")
 
 gmsh.write(str(mesh_file))
 
