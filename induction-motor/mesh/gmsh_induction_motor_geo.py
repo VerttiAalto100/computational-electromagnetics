@@ -24,7 +24,7 @@ name_by_old_tag = {Rotor_Yoke_tag: "Rotor_Yoke", Rotor_Aluminium_tag: "Rotor_Alu
 for t in Airgap_tags:
     name_by_old_tag[t] = "AirGap"
 for i, t in enumerate(Air_Holes_tags):
-    name_by_old_tag[t] = f"Air_Hole_{i+1}"
+    name_by_old_tag[t] = f"Air_Hole"
 for i, t in enumerate(Slots_tags):
     name_by_old_tag[t] = f"Slot_{i+1}"
 
@@ -144,6 +144,10 @@ for dim, tag in boundary_curves:
 outer_curves = list(set(outer_curves))
 gmsh.model.addPhysicalGroup(1, outer_curves, name="Outer_Boundary")
 
+
+gmsh.model.occ.synchronize()
+
+
 # ------------------------------------------------------------------
 # 6. Mesh sizing: fine in the air gap, coarse at the air box's outer edge
 # ------------------------------------------------------------------
@@ -153,8 +157,8 @@ for s in groups["AirGap"]:
     airgap_curves.extend(tag for dim, tag in b)
 airgap_curves = list(set(airgap_curves))
 
-AIRGAP_SIZE  = stator_outer_r / 100.0     # fine size in/around the air gap -- TUNE
-COARSE_SIZE  = stator_outer_r / 10.0       # coarse size at the air box outer edge -- TUNE
+AIRGAP_SIZE  = stator_outer_r / 100.0    # fine size in/around the air gap -- TUNE
+COARSE_SIZE  = stator_outer_r / 10.0      # coarse size at the air box outer edge -- TUNE
 GRADING_DIST = airbox_r - stator_outer_r  # distance over which size grows -- TUNE
 
 gmsh.model.mesh.field.add("Distance", 1)
@@ -179,7 +183,11 @@ gmsh.option.setNumber("Mesh.Algorithm", 6)  # Frontal-Delaunay, plays well with 
 # ------------------------------------------------------------------
 # 7. Generate & save the mesh
 # ------------------------------------------------------------------
+
+
 gmsh.model.mesh.generate(2)
+
+
 
 from pathlib import Path
 # write the .msh to same folder
