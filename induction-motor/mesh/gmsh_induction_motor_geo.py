@@ -52,7 +52,7 @@ cx = 0.5 * (xmin + xmax)
 cy = 0.5 * (ymin + ymax)
 stator_outer_r = 0.5 * max(xmax - xmin, ymax - ymin)
 
-AIRBOX_FACTOR = 1.5          # air box outer radius = 1.5 x stator outer radius -- TUNE
+AIRBOX_FACTOR = 1.2          # air box outer radius = 1.5 x stator outer radius -- TUNE
 airbox_r = AIRBOX_FACTOR * stator_outer_r
 
 airbox_disk_tag = gmsh.model.occ.addDisk(cx, cy, 0, airbox_r, airbox_r)
@@ -157,7 +157,7 @@ for s in groups["AirGap"]:
     airgap_curves.extend(tag for dim, tag in b)
 airgap_curves = list(set(airgap_curves))
 
-AIRGAP_SIZE  = stator_outer_r / 100.0    # fine size in/around the air gap -- TUNE
+AIRGAP_SIZE  = stator_outer_r / 50.0    # fine size in/around the air gap -- TUNE
 COARSE_SIZE  = stator_outer_r / 10.0      # coarse size at the air box outer edge -- TUNE
 GRADING_DIST = airbox_r - stator_outer_r  # distance over which size grows -- TUNE
 
@@ -191,7 +191,7 @@ gmsh.model.mesh.generate(2)
 
 from pathlib import Path
 # write the .msh to same folder
-mesh_file = Path(__file__).with_name("induction_motor.msh")
+mesh_file = Path(__file__).with_name("induction_motor.bdf")
 
 gmsh.write(str(mesh_file))
 
