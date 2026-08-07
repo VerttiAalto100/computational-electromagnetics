@@ -4,10 +4,10 @@ from skfem import Basis, ElementTriP1
 from skfem.utils import project
 
 
-def eval_Az_at_points(A_z, basis, points):
-    """Evaluate the primary DOF field A_z at arbitrary (x,y) points."""
+def eval_scalar_field_at_points(scalar_field, basis, points):
+    """Evaluate the primary DOF field at arbitrary (x,y) points."""
     P = basis.probes(points.T)
-    return P @ A_z
+    return P @ scalar_field
 
 
 def elem_to_nodal(mesh, elem_values):
