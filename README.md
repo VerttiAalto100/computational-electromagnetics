@@ -1,11 +1,9 @@
-# FEM Examples: Electromagnetics, Thermal and CFD
-
 Finite element examples for computational physics implemented in Python using **scikit-fem** and the **Gmsh Python API**.
 
 - **scikit-fem** – https://github.com/kinnala/scikit-fem
 - **Gmsh** – https://gmsh.info/
 
-These problems emphasize understanding of the FEM workflow, rather than optimization and computational efficiency.
+Implementations of FEM problems for different physics domains. The examples are not optimized in any way, but they are light enough to run on a laptop.
 
 **Author:** Vertti Aalto  
 **Email:** vertti.aalto@gmail.com
