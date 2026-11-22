@@ -1,11 +1,11 @@
-# Computational Electromagnetics with FEM
+# FEM Examples: Electromagnetics, Thermal and CFD
 
-Finite element method (FEM) examples for computational electromagnetics implemented in Python using **scikit-fem** and the **Gmsh Python API**.
+Finite element examples for computational physics implemented in Python using **scikit-fem** and the **Gmsh Python API**.
 
 - **scikit-fem** – https://github.com/kinnala/scikit-fem
 - **Gmsh** – https://gmsh.info/
 
-These problems emphasize clarity and understanding of the FEM workflow, rather than optimization and computational efficiency.
+These problems emphasize understanding of the FEM workflow, rather than optimization and computational efficiency.
 
 **Author:** Vertti Aalto  
 **Email:** vertti.aalto@gmail.com
@@ -14,25 +14,48 @@ These problems emphasize clarity and understanding of the FEM workflow, rather t
 
 ## Repository Structure
 
+Examples are grouped by physics domain:
+
 ```
 .
-├── example_name/
-│   ├── mesh/
-│   │   ├── geometry.py         # Gmsh geometry file
-│   │   └── mesh.msh or .bdf    # Generated mesh
-│   ├── verification/
-│   │   ├── model.mph           # COMSOL model (if available)
-│   │   └── data                # Reference data (if available)
-│   └── example_notebook.ipynb  # FEM implementation
+├── elmag/                      # Electromagnetics
+│   ├── back-emf/
+│   ├── induction-motor/
+│   ├── induction-motor-transient/
+│   ├── linear-iron-and-pm/
+│   ├── nonlinear-iron-and-pm/
+│   ├── pmsm-mechanical-dynamics/
+│   ├── pmsm-torque-evaluation/
+│   └── rotating-pmsm/
 │
-├── another_example/
-│   └── ...
+├── thermal/                    # Heat transfer
+│   ├── steady-state-heat-transfer/
+│   ├── steady-state-convection/
+│   └── transient-convection/
 │
-├── utils/
-│   # Helper functions
+├── cfd/                        # fluid dynamics
+│   └── poiseuille_flow/
+│
+├── utils/                      # Helper functions shared by all examples
 │
 └── README.md
 ```
+
+### Example layout
+
+Each example follows the same structure:
+
+```
+example_name/
+├── mesh/
+│   ├── geometry.py             # Gmsh geometry file
+│   └── mesh.msh or .bdf        # Generated mesh
+├── verification/
+│   ├── model.mph               # COMSOL model (if available)
+│   └── data                    # Reference data (if available)
+└── example_notebook.ipynb      # FEM implementation
+```
+
 Each example typically includes:
 
 - Geometry generation using the Gmsh Python API
@@ -45,5 +68,5 @@ Each example typically includes:
 
 ## Branches
 
-- **master** – Stable & verified examples
+- **main** – Stable & verified examples
 - **development** – Work in progress
